@@ -15,6 +15,9 @@ logger = getLogger(__name__)
 class DbCache(BaseCache):
     """SQLite cache backend.
 
+    This class is thread-safe, but note that multi-threaded SQLite usage does not increase
+    performance, and can potentially reduce performance slightly. See the
+    `SQLite FAQ <https://www.sqlite.org/faq.html>`_ for more details.
 
     Args:
         db_path: Database file path (expands user paths and creates parent dirs)
@@ -28,6 +31,8 @@ class DbCache(BaseCache):
         db_path = _get_db_path(db_path)
         self.responses = DbPickleDict(db_path, table_name='responses', fast_save=fast_save, **kwargs)
         self.redirects = DbDict(db_path, table_name='redirects', **kwargs)
+        # self.responses = DbPickleDict(db_path, 'responses', fast_save=fast_save, **kwargs)
+        # self.redirects = DbDict(db_path, 'redirects', connection_factory=self.responses._conn, **kwargs)
 
     def remove_expired_responses(self, *args, **kwargs):
         """Remove expired responses from the cache, with additional cleanup"""
@@ -51,12 +56,11 @@ class DbDict(BaseStorage):
     Args:
         db_path: Database file path
         table_name: Table name
-        fast_save: Use `"PRAGMA synchronous = 0;" <http://www.sqlite.org/pragma.html#pragma_synchronous>`_
-            to speed up cache saving, but with the potential for data loss
-        timeout: Timeout for acquiring a database lock
+        connection: A :py:class:`.ConnectionFactory` to use instead of creating a new one
+        kwargs: Additional keyword arguments for :py:func:`sqlite3.connect`
     """
 
-    def __init__(self, db_path, table_name='http_cache', fast_save=False, **kwargs):
+    def __init__(self, db_path, table_name='http_cache', fast_save: bool = False, connection_factory=None, **kwargs):
         kwargs.setdefault('suppress_warnings', True)
         super().__init__(**kwargs)
         self.connection_kwargs = get_valid_kwargs(sqlite_template, kwargs)
@@ -64,20 +68,29 @@ class DbDict(BaseStorage):
         self.fast_save = fast_save
         self.table_name = table_name
 
+        self._init_db()
         self._can_commit = True
+        # self._conn = connection_factory or ConnectionFactory(db_path, **kwargs)
         self._local_context = threading.local()
+
+    def _init_db(self):
         with sqlite3.connect(self.db_path, **self.connection_kwargs) as con:
-            con.execute("create table if not exists `%s` (key PRIMARY KEY, value)" % self.table_name)
+            con.execute(f'CREATE TABLE IF NOT EXISTS `{self.table_name}` (key PRIMARY KEY, value)')
+
+    # @contextmanager
+    # def connection(self, commit=False) -> sqlite3.Connection:
+    #     with self._conn.connection(commit=commit) as connection:
+    #         yield connection
 
     @contextmanager
-    def connection(self, commit_on_success=False):
+    def connection(self, commit=False):
         if not hasattr(self._local_context, "con"):
             logger.debug(f'Opening connection to {self.db_path}:{self.table_name}')
             self._local_context.con = sqlite3.connect(self.db_path, **self.connection_kwargs)
             if self.fast_save:
                 self._local_context.con.execute("PRAGMA synchronous = 0;")
         yield self._local_context.con
-        if commit_on_success and self._can_commit:
+        if commit and self._can_commit:
             self._local_context.con.commit()
 
     def __del__(self):
@@ -86,14 +99,14 @@ class DbDict(BaseStorage):
 
     @contextmanager
     def bulk_commit(self):
-        """
-        Context manager used to speedup insertion of big number of records
-        ::
+        """Context manager used to keep a connection open for a large number of consecutive requests
 
-            >>> d1 = DbDict('test')
-            >>> with d1.bulk_commit():
+        Example:
+
+            >>> cache = DbDict('test')
+            >>> with cache.bulk_commit():
             ...     for i in range(1000):
-            ...         d1[i] = i * 2
+            ...         cache[f'key_{i}'] = i * 2
 
         """
         self._can_commit = False
@@ -104,45 +117,56 @@ class DbDict(BaseStorage):
         finally:
             self._can_commit = True
 
+        # self._conn.open()
+        # try:
+        #     yield
+        #     self._conn.commit()
+        # finally:
+        #     self._conn.close()
+
     def __getitem__(self, key):
         with self.connection() as con:
-            row = con.execute("select value from `%s` where key=?" % self.table_name, (key,)).fetchone()
+            row = con.execute(f'SELECT value FROM `{self.table_name}` WHERE key=?', (key,)).fetchone()
         # raise error after the with block, otherwise the connection will be locked
         if not row:
             raise KeyError
         return row[0]
 
+    # def close(self):
+    #     """Close the connection, if currently open"""
+    #     self._conn.close()
+
     def __setitem__(self, key, item):
-        with self.connection(True) as con:
+        with self.connection(commit=True) as con:
             con.execute(
-                "insert or replace into `%s` (key,value) values (?,?)" % self.table_name,
+                f'INSERT OR REPLACE INTO `{self.table_name}` (key,value) values (?,?)',
                 (key, item),
             )
 
     def __delitem__(self, key):
         with self.connection(True) as con:
-            cur = con.execute("delete from `%s` where key=?" % self.table_name, (key,))
+            cur = con.execute(f'DELETE FROM `{self.table_name}` WHERE key=?', (key,))
         if not cur.rowcount:
             raise KeyError
 
     def __iter__(self):
         with self.connection() as con:
-            for row in con.execute("select key from `%s`" % self.table_name):
+            for row in con.execute(f'SELECT key FROM `{self.table_name}`'):
                 yield row[0]
 
     def __len__(self):
         with self.connection() as con:
-            return con.execute("select count(key) from `%s`" % self.table_name).fetchone()[0]
+            return con.execute(f'SELECT COUNT(key) FROM `{self.table_name}`').fetchone()[0]
 
     def clear(self):
         with self.connection(True) as con:
-            con.execute("drop table if exists `%s`" % self.table_name)
-            con.execute("create table `%s` (key PRIMARY KEY, value)" % self.table_name)
-            con.execute("vacuum")
+            con.execute(f'DROP TABLE IF EXISTS`{self.table_name}`')
+            con.execute(f'CREATE TABLE `{self.table_name}` (key PRIMARY KEY, value)')
+            con.execute('VACUUM')
 
     def vacuum(self):
-        with self.connection(True) as con:
-            con.execute("vacuum")
+        with self.connection(commit=True) as con:
+            con.execute('VACUUM')
 
     def __str__(self):
         return str(dict(self.items()))
@@ -156,6 +180,74 @@ class DbPickleDict(DbDict):
 
     def __getitem__(self, key):
         return self.deserialize(super().__getitem__(key))
+
+
+class ConnectionFactory:
+    """Class that wraps SQLite connections. May be used to either create multiple (shared)
+    short-lived connections, or one long-lived connection per thread.
+    """
+
+    def __init__(self, db_path, fast_save: bool = False, **kwargs):
+        self.db_path = db_path
+        self.fast_save = fast_save
+
+        # Allow concurrent reads, and use a lock to prevent concurrent writes
+        self.connection_kwargs = get_valid_kwargs(sqlite_template, kwargs)
+        self.connection_kwargs.setdefault('check_same_thread', False)
+        self._lock = threading.RLock()
+        self._threadlocal = threading.local()
+
+    def _get_connection(self) -> sqlite3.Connection:
+        """Create a new connection object"""
+        logger.debug(f'Opening connection to {self.db_path}')
+        connection = sqlite3.connect(self.db_path, **self.connection_kwargs)
+        if self.fast_save:
+            connection.execute('PRAGMA synchronous = 0')
+        return connection
+
+    @contextmanager
+    def connection(self, commit=False) -> sqlite3.Connection:
+        """Get the currently active connection, if any; otherwise create a new connection that will
+        be closed after use."""
+        if self.is_open:
+            # TODO: commit afterward if commit=True, except during bulk_commit?
+            yield self._threadlocal.connection
+        else:
+            ctx = self.autocommit_connection if commit else self.closing_connection
+            with ctx() as connection:
+                yield connection
+
+    @contextmanager
+    def autocommit_connection(self) -> sqlite3.Connection:
+        # Use a lock for write operations
+        with self._lock, self.closing_connection() as connection:
+            yield connection
+            connection.commit()
+
+    @contextmanager
+    def closing_connection(self) -> sqlite3.Connection:
+        connection = self._get_connection()
+        try:
+            yield connection
+        finally:
+            connection.close()
+
+    @property
+    def is_open(self) -> bool:
+        return getattr(self._threadlocal, 'connection', None) is not None
+
+    def open(self):
+        if not self.is_open:
+            self._threadlocal.connection = self._get_connection()
+
+    def close(self):
+        if self.is_open:
+            self._threadlocal.connection.close()
+            self._threadlocal.connection = None
+
+    def commit(self):
+        if self.is_open:
+            self._threadlocal.connection.commit()
 
 
 def _get_db_path(db_path):

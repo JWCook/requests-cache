@@ -38,7 +38,7 @@ AWS_OPTIONS = {
 
 # Configure logging to show debug output when tests fail (or with pytest -s)
 basicConfig(level='INFO')
-getLogger('requests_cache').setLevel('DEBUG')
+getLogger('requests_cache').setLevel('INFO')
 logger = getLogger(__name__)
 
 

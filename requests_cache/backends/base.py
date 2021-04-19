@@ -110,6 +110,11 @@ class BaseCache:
         self.responses.clear()
         self.redirects.clear()
 
+    def close(self):
+        """Close active connections, if any"""
+        self.responses.close()
+        self.redirects.close()
+
     def remove_expired_responses(self, expire_after: ExpirationTime = None):
         """Remove expired responses from the cache, optionally with revalidation
 
@@ -180,6 +185,9 @@ class BaseStorage(MutableMapping, ABC):
         if not secret_key:
             level = DEBUG if suppress_warnings else WARNING
             logger.log(level, 'Using a secret key is recommended for this backend')
+
+    def close(self):
+        """Close the active connection, if any"""
 
     def serialize(self, item: ResponseOrKey) -> bytes:
         """Serialize a URL or response into bytes"""

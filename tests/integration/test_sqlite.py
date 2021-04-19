@@ -1,6 +1,7 @@
 import os
 import unittest
 from threading import Thread
+from time import time
 from unittest.mock import patch
 
 from requests_cache.backends.sqlite import DbDict, DbPickleDict
@@ -19,25 +20,15 @@ class SQLiteTestCase(BaseStorageTestCase):
         with d.bulk_commit():
             pass
         d.clear()
+
         n = 1000
+        start = time()
         with d.bulk_commit():
             for i in range(n):
                 d[i] = i
+
+        print(f'Time elapsed: {time() - start} seconds')
         assert list(d.keys()) == list(range(n))
-
-    def test_switch_commit(self):
-        d = self.storage_class(self.NAMESPACE)
-        d.clear()
-        d[1] = 1
-        d = self.storage_class(self.NAMESPACE)
-        assert 1 in d
-
-        d._can_commit = False
-        d[2] = 2
-
-        d = self.storage_class(self.NAMESPACE)
-        assert 2 not in d
-        assert d._can_commit is True
 
     def test_fast_save(self):
         d1 = self.storage_class(self.NAMESPACE, fast_save=True)
@@ -107,4 +98,4 @@ class DbPickleDictTestCase(SQLiteTestCase, unittest.TestCase):
 def test_connection_kwargs(mock_sqlite):
     """A spot check to make sure optional connection kwargs gets passed to connection"""
     DbDict('test', timeout=0.5, invalid_kwarg='???')
-    mock_sqlite.connect.assert_called_with('test', timeout=0.5)
+    mock_sqlite.connect.assert_called_with('test', timeout=0.5, check_same_thread=False)
