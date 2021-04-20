@@ -920,6 +920,14 @@ lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
 
 [[package]]
+name = "supersqlite"
+version = "0.0.75"
+description = "A supercharged SQLite library for Python."
+category = "main"
+optional = true
+python-versions = "*"
+
+[[package]]
 name = "timeout-decorator"
 version = "0.5.0"
 description = "Timeout decorator"
@@ -1010,11 +1018,12 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [extras]
 backends = ["boto3", "pymongo", "redis"]
 docs = ["docutils", "m2r2", "Sphinx", "sphinx-autodoc-typehints", "sphinx-copybutton", "sphinxcontrib-apidoc"]
+sqlite-extras = ["supersqlite"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6"
-content-hash = "e6eb690c7f5ea0f7a4208d3d24b9384034f076d3c41053a65137e5a3eaa13c61"
+content-hash = "29a4531baf74744d9c2d28afa83754782fb6e84f97ceed966664c85c112a9352"
 
 [metadata.files]
 alabaster = [
@@ -1571,6 +1580,9 @@ sphinxcontrib-qthelp = [
 sphinxcontrib-serializinghtml = [
     {file = "sphinxcontrib-serializinghtml-1.1.5.tar.gz", hash = "sha256:aa5f6de5dfdf809ef505c4895e51ef5c9eac17d0f287933eb49ec495280b6952"},
     {file = "sphinxcontrib_serializinghtml-1.1.5-py2.py3-none-any.whl", hash = "sha256:352a9a00ae864471d3a7ead8d7d79f5fc0b57e8b3f95e9867eb9eb28999b92fd"},
+]
+supersqlite = [
+    {file = "supersqlite-0.0.75.tar.gz", hash = "sha256:5d99d487a1af473bbd9d15315f4031f711ec64b89af1b843911267e6247359dc"},
 ]
 timeout-decorator = [
     {file = "timeout-decorator-0.5.0.tar.gz", hash = "sha256:6a2f2f58db1c5b24a2cc79de6345760377ad8bdc13813f5265f6c3e63d16b3d7"},

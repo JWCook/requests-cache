@@ -1,4 +1,3 @@
-import sqlite3
 import threading
 from contextlib import contextmanager
 from logging import getLogger
@@ -11,6 +10,16 @@ from typing import Iterable, List, Tuple, Type, Union
 from . import BaseCache, BaseStorage, get_valid_kwargs
 
 logger = getLogger(__name__)
+
+
+try:
+    from supersqlite import sqlite3
+
+    logger.debug('Using supersqlite')
+except ImportError:
+    import sqlite3
+
+    logger.debug('Using stdlib sqlite3')
 
 
 class DbCache(BaseCache):
