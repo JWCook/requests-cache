@@ -632,14 +632,14 @@ pytest = ">=3.10"
 
 [[package]]
 name = "pytest-order"
-version = "0.11.0"
+version = "1.0.0"
 description = "pytest plugin to run your tests in a specific order"
 category = "dev"
 optional = false
 python-versions = "*"
 
 [package.dependencies]
-pytest = ">=3.7"
+pytest = ">=5.0"
 
 [[package]]
 name = "pytest-xdist"
@@ -1054,7 +1054,7 @@ json = ["cattrs"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6"
-content-hash = "9d809686c9f27b2e6de423751441073becb53533b9511ee2a617fad8be719008"
+content-hash = "b6d2bfb23a5e753b9aca413e2776c8fcf6cefba4a9b05a981f6a7abf0714bd23"
 
 [metadata.files]
 alabaster = [
@@ -1459,8 +1459,8 @@ pytest-forked = [
     {file = "pytest_forked-1.3.0-py2.py3-none-any.whl", hash = "sha256:dc4147784048e70ef5d437951728825a131b81714b398d5d52f17c7c144d8815"},
 ]
 pytest-order = [
-    {file = "pytest-order-0.11.0.tar.gz", hash = "sha256:044e4c90d86895792e6da7577df7fed6440bd59ee593374f9252679a252d8eaa"},
-    {file = "pytest_order-0.11.0-py2.py3-none-any.whl", hash = "sha256:ed3c06be2e6964f9f37c1e86c4ef1477cf4f2502d6b538bb334fd1c629a1cae2"},
+    {file = "pytest-order-1.0.0.tar.gz", hash = "sha256:5997a262b31234eebb461f9a9ef24687bf732029b499845a4398b69edb5ac321"},
+    {file = "pytest_order-1.0.0-py3-none-any.whl", hash = "sha256:a4cdf12f4c83c76bdfd6e6088e2e157df7fdf91a9c3e3ca7d8809e8dabce0f4b"},
 ]
 pytest-xdist = [
     {file = "pytest-xdist-2.2.1.tar.gz", hash = "sha256:718887296892f92683f6a51f25a3ae584993b06f7076ce1e1fd482e59a8220a2"},
