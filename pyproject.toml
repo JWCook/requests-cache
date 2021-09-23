@@ -25,10 +25,9 @@ include = [
     {format="sdist", path="tests"},
 ]
 
+# Required dependencies
 [tool.poetry.dependencies]
 python        = "^3.7"
-
-# Required dependencies
 requests      = "^2.22"    # Needs no introduction
 urllib3       = "^1.25.5"  # Use a slightly newer version than required by requests (for bugfixes)
 appdirs       = "^1.4.4"   # For options that use platform-specific user cache dirs
@@ -36,31 +35,61 @@ attrs         = "^21.2"    # For response data models
 cattrs        = "^1.8"     # For response serialization
 url-normalize = "^1.4"     # For reducing duplicate cache items
 
-# Optional backend dependencies
-boto3                      = {optional=true, version="^1.15"}
-botocore                   = {optional=true, version="^1.18"}
-pymongo                    = {optional=true, version="^3.0"}
-redis                      = {optional=true, version=">=3,<5"}
+[tool.poetry.group.backends]
+optional = true
+[tool.poetry.group.backends.dependencies]
+boto3                      = "^1.15"
+botocore                   = "^1.18"
+pymongo                    = "^3.0"
+redis                      = ">=3.0"
 
 # Optional serialization dependencies
-bson                       = {optional=true, version=">=0.5"}
-itsdangerous               = {optional=true, version="^2.0"}
-pyyaml                     = {optional=true, version=">=5.4"}
-ujson                      = {optional=true, version=">=4.0"}
+[tool.poetry.group.serializers]
+optional = true
+[tool.poetry.group.serializers.dependencies]
+bson                       = ">=0.5"
+itsdangerous               = "^2.0"
+pyyaml                     = ">=5.4"
+ujson                      = ">=4.0"
 
-# All the bells and whistles for building documentation;
-# defined here because readthedocs doesn't (yet?) support poetry.dev-dependencies
-furo                       = {optional=true, version=">=2021.9.8"}
-linkify-it-py              = {optional=true, version="^1.0.1"}
-myst-parser                = {optional=true, version="^0.15.1"}
-sphinx                     = {optional=true, version="4.3.0"}
-sphinx-autodoc-typehints   = {optional=true, version="^1.11"}
-sphinx-automodapi          = {optional=true, version="^0.13"}
-sphinx-copybutton          = {optional=true, version=">=0.3,<0.5"}
-sphinx-inline-tabs         = {optional=true, version="^2021.8.17b10", python=">=3.8"}
-sphinx-notfound-page       = {optional=true, version="*"}
-sphinx-panels              = {optional=true, version="^0.6"}
-sphinxcontrib-apidoc       = {optional=true, version="^0.3"}
+
+# Documentation dependencies for readthedocs
+[tool.poetry.group.docs]
+optional = true
+[tool.poetry.group.docs.dependencies]
+furo                       = ">=2021.9.8"
+linkify-it-py              = "^1.0.1"
+myst-parser                = "^0.15.1"
+sphinx                     = "4.3.0"
+sphinx-autodoc-typehints   = "^1.11"
+sphinx-automodapi          = "^0.13"
+sphinx-copybutton          = ">=0.3,<0.5"
+sphinx-inline-tabs         = {version="^2021.8.17b10", python=">=3.8"}
+sphinx-notfound-page       = "*"
+sphinx-panels              = "^0.6"
+sphinxcontrib-apidoc       = "^0.3"
+
+[tool.poetry.group.dev.dependencies]
+# For unit + integration tests
+coverage                   = "^6.1"
+psutil                     = "^5.0"
+pytest                     = "^6.2"
+pytest-clarity             = "^1.0.1"
+pytest-cov                 = ">=3.0"
+pytest-rerunfailures       = "^10.1"
+pytest-xdist               = ">=2.2"
+requests-mock              = "^1.8"
+responses                  = "0.16.0"
+timeout-decorator          = "^0.5"
+
+# Tools for linting, type checking, etc. are managed with pre-commit
+pre-commit                 = "^2.15"
+
+# For convenience in local development
+nox                        = "^2021.10.1"
+nox-poetry                 = "^0.9.0"
+rich                       = ">=10.0"
+sphinx-autobuild           = "^2021.3.14"
 
 [tool.poetry.extras]
 # Package extras for optional backend dependencies
@@ -81,28 +110,6 @@ all      = ["boto3", "botocore", "itsdangerous", "pymongo", "pyyaml", "redis", "
 docs     = ["furo", "linkify-it-py", "myst-parser", "sphinx", "sphinx-autodoc-typehints",
             "sphinx-automodapi", "sphinx-copybutton", "sphinx-inline-tabs", "sphinx-panels",
             "sphinx-notfound-page", "sphinxcontrib-apidoc"]
-
-[tool.poetry.dev-dependencies]
-# For unit + integration tests
-coverage              = "^6.1"
-psutil                = "^5.0"
-pytest                = "^6.2"
-pytest-clarity        = "^1.0.1"
-pytest-cov            = ">=3.0"
-pytest-rerunfailures  = "^10.1"
-pytest-xdist          = ">=2.2"
-requests-mock         = "^1.8"
-responses             = "0.16.0"
-timeout-decorator     = "^0.5"
-
-# Tools for linting, type checking, etc. are managed with pre-commit
-pre-commit            = "^2.15"
-
-# For convenience in local development
-nox                   = "^2021.10.1"
-nox-poetry            = "^0.9.0"
-rich                  = ">=10.0"
-sphinx-autobuild      = "^2021.3.14"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
