@@ -35,9 +35,9 @@ class RedisCache(BaseCache):
         super().__init__(cache_name=namespace, **kwargs)
         self.responses = RedisDict(namespace, connection=connection, ttl=ttl, **kwargs)
         kwargs.pop('serializer', None)
-        self.redirects = RedisHashDict(
+        self.aliases = RedisHashDict(
             namespace,
-            'redirects',
+            'aliases',
             connection=self.responses.connection,
             serializer=utf8_encoder,  # Only needs encoding to/decoding from bytes
             **kwargs,

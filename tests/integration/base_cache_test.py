@@ -127,8 +127,8 @@ class BaseCacheTest:
 
     @pytest.mark.parametrize('n_redirects', range(1, 5))
     @pytest.mark.parametrize('endpoint', ['redirect', 'absolute-redirect', 'relative-redirect'])
-    def test_redirect_history(self, endpoint, n_redirects):
-        """Test redirect caching (in separate `redirects` cache) with all types of redirect
+    def test_redirect_aliases(self, endpoint, n_redirects):
+        """Test redirect caching (in separate `aliases` cache) with all types of redirect
         endpoints, using different numbers of consecutive redirects
         """
         session = self.init_session()
@@ -136,7 +136,7 @@ class BaseCacheTest:
         r2 = session.get(httpbin('get'))
 
         assert r2.from_cache is True
-        assert len(session.cache.redirects) == n_redirects
+        assert len(session.cache.aliases) == n_redirects
 
     @pytest.mark.parametrize('endpoint', ['redirect', 'absolute-redirect', 'relative-redirect'])
     def test_redirect_responses(self, endpoint):
@@ -146,7 +146,7 @@ class BaseCacheTest:
         r2 = session.head(httpbin(f'{endpoint}/2'))
 
         assert r2.from_cache is True
-        assert len(session.cache.redirects) == 0
+        assert len(session.cache.aliases) == 0
         assert isinstance(r1.next, PreparedRequest) and r1.next.url.endswith('redirect/1')
         assert isinstance(r2.next, PreparedRequest) and r2.next.url.endswith('redirect/1')
 
@@ -315,11 +315,11 @@ class BaseCacheTest:
         # Cache a response and some redirects, which should be the only non-expired cache items
         session.get(httpbin('get'), expire_after=-1)
         session.get(httpbin('redirect/3'), expire_after=-1)
-        assert len(session.cache.redirects.keys()) == 4
+        assert len(session.cache.aliases.keys()) == 4
         session.cache.remove_expired_responses()
 
         assert len(session.cache.responses.keys()) == 2
-        assert len(session.cache.redirects.keys()) == 3
+        assert len(session.cache.aliases.keys()) == 3
         assert not session.cache.has_url(httpbin('redirect/1'))
         assert not any([session.cache.has_url(httpbin(f)) for f in HTTPBIN_FORMATS])
 

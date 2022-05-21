@@ -49,14 +49,19 @@ class BaseCache:
     def __init__(self, cache_name: str = DEFAULT_CACHE_NAME, **kwargs):
         self.cache_name = cache_name
         self.responses: BaseStorage = DictStorage()
-        self.redirects: BaseStorage = DictStorage()
+        self.aliases: BaseStorage = DictStorage()
         self._settings = CacheSettings()  # Init and public access is done in CachedSession
 
     @property
     def urls(self) -> Iterator[str]:
-        """Get all URLs currently in the cache (excluding redirects)"""
+        """Get all URLs currently in the cache (excluding aliases)"""
         for response in self.values():
             yield response.url
+
+    @property
+    def redirects(self) -> BaseStorage:
+        """Read-only synonym for ``BaseCache.aliases``, for backwards-compatibility"""
+        return self.aliases
 
     def get_response(self, key: str, default=None) -> Optional[CachedResponse]:
         """Retrieve a response from the cache, if it exists
@@ -68,7 +73,7 @@ class BaseCache:
         try:
             response = self.responses.get(key)
             if response is None:  # Note: bool(requests.Response) is False if status > 400
-                response = self.responses[self.redirects[key]]
+                response = self.responses[self.aliases[key]]
             response.cache_key = key
             return response
         except KeyError:
@@ -91,19 +96,19 @@ class BaseCache:
         cached_response = redact_response(cached_response, self._settings.ignored_parameters)
         self.responses[cache_key] = cached_response
         for r in response.history:
-            self.redirects[self.create_key(r.request)] = cache_key
+            self.aliases[self.create_key(r.request)] = cache_key
 
     def clear(self):
         """Delete all items from the cache"""
         logger.info('Clearing all items from the cache')
         self.responses.clear()
-        self.redirects.clear()
+        self.aliases.clear()
 
     def close(self):
         """Close any open backend connections"""
         logger.debug('Closing backend connections')
         self.responses.close()
-        self.redirects.close()
+        self.aliases.close()
 
     def create_key(
         self, request: PreparedRequest = None, match_headers: Iterable[str] = None, **kwargs
@@ -123,11 +128,11 @@ class BaseCache:
         # If it's a response key, first delete any associated redirect history
         try:
             for r in self.responses[key].history:
-                del self.redirects[create_key(r.request, self._settings.ignored_parameters)]
+                del self.aliases[create_key(r.request, self._settings.ignored_parameters)]
         except (KeyError, *DESERIALIZE_ERRORS):
             pass
         # Then delete the response itself, or just the redirect if it's a redirect key
-        for cache in [self.responses, self.redirects]:
+        for cache in [self.responses, self.aliases]:
             try:
                 del cache[key]
             except KeyError:
@@ -145,7 +150,7 @@ class BaseCache:
 
     def has_key(self, key: str) -> bool:
         """Returns ``True`` if ``key`` is in the cache"""
-        return key in self.responses or key in self.redirects
+        return key in self.responses or key in self.aliases
 
     def has_url(self, url: str, method: str = 'GET', **kwargs) -> bool:
         """Returns ``True`` if the specified request is cached"""
@@ -153,8 +158,8 @@ class BaseCache:
         return self.has_key(key)  # noqa: W601
 
     def keys(self, check_expiry=False) -> Iterator[str]:
-        """Get all cache keys for redirects and valid responses combined"""
-        yield from self.redirects.keys()
+        """Get all cache keys for valid responses and aliases combined"""
+        yield from self.aliases.keys()
         for key, _ in self._get_valid_responses(check_expiry=check_expiry):
             yield key
 
@@ -195,14 +200,14 @@ class BaseCache:
                 self.responses[key] = response
 
     def bulk_delete(self, keys: Iterable[str]):
-        """Remove multiple responses and their associated redirects from the cache"""
+        """Remove multiple responses and their aliases from the cache"""
         self.responses.bulk_delete(keys)
-        self.remove_invalid_redirects()
+        self.remove_invalid_aliases()
 
-    def remove_invalid_redirects(self):
-        """Remove any redirects that no longer point to an existing response"""
-        invalid_redirects = [k for k, v in self.redirects.items() if v not in self.responses]
-        self.redirects.bulk_delete(invalid_redirects)
+    def remove_invalid_aliases(self):
+        """Remove any response aliases that no longer point to an existing response"""
+        invalid_aliases = [k for k, v in self.aliases.items() if v not in self.responses]
+        self.aliases.bulk_delete(invalid_aliases)
 
     def response_count(self, check_expiry=False) -> int:
         """Get the number of responses in the cache, excluding invalid (unusable) responses.
@@ -214,7 +219,7 @@ class BaseCache:
         """Update this cache with the contents of another cache"""
         logger.debug(f'Copying {len(other.responses)} responses from {repr(other)} to {repr(self)}')
         self.responses.update(other.responses)
-        self.redirects.update(other.redirects)
+        self.aliases.update(other.aliases)
 
     def values(self, check_expiry=False) -> Iterator[CachedResponse]:
         """Get all valid response objects from the cache"""

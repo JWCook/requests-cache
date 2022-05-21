@@ -34,7 +34,7 @@ logger = getLogger(__name__)
 def create_key(
     request: AnyRequest = None,
     ignored_parameters: ParamList = None,
-    match_headers: Union[ParamList, bool] = False,
+    match_headers: Union[ParamList, bool] = None,
     serializer: Any = None,
     **request_kwargs,
 ) -> str:

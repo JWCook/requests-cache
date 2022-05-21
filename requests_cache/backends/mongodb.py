@@ -37,9 +37,9 @@ class MongoCache(BaseCache):
             connection=connection,
             **kwargs,
         )
-        self.redirects: MongoDict = MongoDict(
+        self.aliases: MongoDict = MongoDict(
             db_name,
-            collection_name='redirects',
+            collection_name='aliases',
             connection=self.responses.connection,
             no_serializer=True,
             **kwargs,

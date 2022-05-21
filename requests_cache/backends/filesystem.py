@@ -32,8 +32,8 @@ class FileCache(BaseCache):
     def __init__(self, cache_name: AnyPath = 'http_cache', use_temp: bool = False, **kwargs):
         super().__init__(cache_name=str(cache_name), **kwargs)
         self.responses: FileDict = FileDict(cache_name, use_temp=use_temp, **kwargs)
-        self.redirects: SQLiteDict = SQLiteDict(
-            self.cache_dir / 'redirects.sqlite', 'redirects', no_serializer=True, **kwargs
+        self.aliases: SQLiteDict = SQLiteDict(
+            self.cache_dir / 'aliases.sqlite', 'aliases', no_serializer=True, **kwargs
         )
 
     @property
@@ -47,9 +47,9 @@ class FileCache(BaseCache):
 
     def clear(self):
         """Clear the cache"""
-        # FileDict.clear() removes the cache directory, including redirects.sqlite
+        # FileDict.clear() removes the cache directory, including aliases.sqlite
         self.responses.clear()
-        self.redirects.init_db()
+        self.aliases.init_db()
 
     def remove_expired_responses(self, *args, **kwargs):
         with self.responses._lock:

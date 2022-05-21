@@ -44,9 +44,9 @@ class DynamoDbCache(BaseCache):
             connection=connection,
             **kwargs,
         )
-        self.redirects = DynamoDbDict(
+        self.aliases = DynamoDbDict(
             table_name,
-            namespace='redirects',
+            namespace='aliases',
             ttl=False,
             connection=self.responses.connection,
             no_serializer=True,

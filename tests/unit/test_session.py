@@ -185,7 +185,7 @@ def test_response_history(mock_session):
     r = mock_session.get(MOCKED_URL_REDIRECT_TARGET)
 
     assert r.from_cache is True
-    assert len(mock_session.cache.redirects) == 1
+    assert len(mock_session.cache.redirects) == len(mock_session.cache.aliases) == 1
 
 
 @patch_normalize_url

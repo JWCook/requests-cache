@@ -63,5 +63,5 @@ class TestFileCache(BaseCacheTest):
             assert path.is_file()
             assert path.suffix == f'.{expected_extension}'
 
-        # Redirects db should be in the same directory as response files
-        assert session.cache.redirects.db_path.parent == session.cache.responses.cache_dir
+        # Aliases db should be in the same directory as response files
+        assert session.cache.aliases.db_path.parent == session.cache.responses.cache_dir

@@ -75,7 +75,9 @@ If you encounter a problem not listed here after updating to 1.0, please file a 
     * The `CachedSession` `backend` argument must be either an instance or string alias. Previously it would also accept a backend class.
     * After initialization, cache settings can only be accesed and modified via
     `CachedSession.settings`. Previously, some settings could be modified by setting them on either `CachedSession` or `BaseCache`. In some cases this could silently fail or otherwise have undefined behavior.
-* The following is relevant for users who have made custom backends that extend built-in storage classes:
+* The following is relevant for users who have made custom backends:
+    * `BaseCache.redirects` has been renamed to `BaseCache.aliases`, and is now used for both
+      redirects and secondary cache keys.
     * All `BaseStorage` subclasses now have a `serializer` attribute, which will be unused if
     set to `None`.
     * All serializer-specific `BaseStorage` subclasses have been removed, and merged into their respective parent classes. This includes `SQLitePickleDict`, `MongoPickleDict`, and `GridFSPickleDict`.

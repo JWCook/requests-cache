@@ -129,8 +129,8 @@ If the built-in backends don't suit your needs, you can create your own by makin
 ...     """
 ...     def __init__(self, **kwargs):
 ...         super().__init__(**kwargs)
-...         self.redirects = CustomStorage(**kwargs)
 ...         self.responses = CustomStorage(**kwargs)
+...         self.aliases = CustomStorage(**kwargs)
 
 >>> class CustomStorage(BaseStorage):
 ...     """Dict-like interface for lower-level backend storage operations"""

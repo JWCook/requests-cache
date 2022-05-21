@@ -56,8 +56,9 @@ For example, if you wanted to to see all URLs requested with a specific method:
 ... ]
 ```
 
-You can also inspect `CachedSession.cache.redirects`, which maps redirect URLs to keys of the
-responses they redirect to.
+You can also inspect `CachedSession.cache.aliases`, which maps redirect URLs to keys of the
+responses they redirect to. This also maps primary cache keys to secondary cache keys created for
+responses with `Vary` headers.
 
 Additional `keys()` and `values()` wrapper methods are available on {py:class}`.BaseCache` to get
 combined keys and responses.
@@ -66,7 +67,7 @@ combined keys and responses.
 >>> for response in session.cache.values():
 >>>     print(response)
 
->>> print('All cache keys for redirects and responses combined:')
+>>> print('All cache keys for responses and aliases combined:')
 >>> print(list(session.cache.keys()))
 ```
 

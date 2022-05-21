@@ -45,8 +45,8 @@ class SQLiteCache(BaseCache):
     def __init__(self, db_path: AnyPath = 'http_cache', **kwargs):
         super().__init__(cache_name=str(db_path), **kwargs)
         self.responses: SQLiteDict = SQLiteDict(db_path, table_name='responses', **kwargs)
-        self.redirects: SQLiteDict = SQLiteDict(
-            db_path, table_name='redirects', no_serializer=True, **kwargs
+        self.aliases: SQLiteDict = SQLiteDict(
+            db_path, table_name='aliases', no_serializer=True, **kwargs
         )
 
     @property
@@ -54,13 +54,13 @@ class SQLiteCache(BaseCache):
         return self.responses.db_path
 
     def bulk_delete(self, keys):
-        """Remove multiple responses and their associated redirects from the cache, with additional cleanup"""
+        """Remove multiple responses and their aliases from the cache, with additional cleanup"""
         self.responses.bulk_delete(keys=keys)
         self.responses.vacuum()
 
-        self.redirects.bulk_delete(keys=keys)
-        self.redirects.bulk_delete(values=keys)
-        self.redirects.vacuum()
+        self.aliases.bulk_delete(keys=keys)
+        self.aliases.bulk_delete(values=keys)
+        self.aliases.vacuum()
 
     def clear(self):
         """Clear the cache. If this fails due to a corrupted cache or other I/O error, this will
@@ -73,21 +73,21 @@ class SQLiteCache(BaseCache):
             if isfile(self.responses.db_path):
                 unlink(self.responses.db_path)
             self.responses.init_db()
-            self.redirects.init_db()
+            self.aliases.init_db()
 
     def remove_expired_responses(
         self, expire_after: ExpirationTime = None, older_than: ExpirationTime = None
     ):
         if expire_after is not None or older_than is not None:
-            with self.responses._lock, self.redirects._lock:
+            with self.responses._lock, self.aliases._lock:
                 return super().remove_expired_responses(expire_after, older_than)
         else:
             self.responses.clear_expired()
-            self.remove_invalid_redirects()
+            self.remove_invalid_aliases()
 
-    def remove_invalid_redirects(self):
-        with self.redirects.connection(commit=True) as conn:
-            t1 = self.redirects.table_name
+    def remove_invalid_aliases(self):
+        with self.aliases.connection(commit=True) as conn:
+            t1 = self.aliases.table_name
             t2 = self.responses.table_name
             conn.execute(
                 f'DELETE FROM {t1} WHERE key IN ('

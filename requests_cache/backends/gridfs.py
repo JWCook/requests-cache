@@ -30,9 +30,9 @@ class GridFSCache(BaseCache):
     def __init__(self, db_name: str, **kwargs):
         super().__init__(cache_name=db_name, **kwargs)
         self.responses = GridFSDict(db_name, **kwargs)
-        self.redirects = MongoDict(
+        self.aliases = MongoDict(
             db_name,
-            collection_name='redirects',
+            collection_name='aliases',
             connection=self.responses.connection,
             no_serializer=True,
             **kwargs
