@@ -114,9 +114,13 @@ def normalize_request(
 def normalize_headers(
     headers: Mapping[str, str], ignored_parameters: ParamList
 ) -> CaseInsensitiveDict:
-    """Sort and filter request headers"""
+    """Sort and filter request headers, and normalize minor variations in multi-value headers"""
     if ignored_parameters:
         headers = filter_sort_dict(headers, ignored_parameters)
+    for header, value in headers.items():
+        if ', ' in value:
+            values = [v.strip() for v in value.lower().split(',') if v.strip()]
+            headers[header] = ', '.join(sorted(values))
     return CaseInsensitiveDict(headers)
 
 

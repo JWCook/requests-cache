@@ -119,11 +119,20 @@ def test_normalize_request__ovsersized_body():
     assert normalize_request(request, ignored_parameters=['param']).body == encoded_body
 
 
+def test_normalize_request__headers():
+    request = Request(
+        method='GET',
+        url='https://img.site.com/base/img.jpg',
+        headers={'Accept': 'gzip,  deflate,Venmo,  PayPal, '},
+    )
+    norm_request = normalize_request(request.prepare())
+    assert norm_request.headers == {'Accept': 'deflate, gzip, paypal, venmo'}
+
+
 def test_remove_ignored_headers__empty():
-    request = PreparedRequest()
-    request.prepare(
+    request = Request(
         method='GET',
         url='https://img.site.com/base/img.jpg',
         headers={'foo': 'bar'},
     )
-    assert normalize_request(request, ignored_parameters=None).headers == request.headers
+    assert normalize_request(request.prepare(), ignored_parameters=None).headers == request.headers
