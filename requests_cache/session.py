@@ -194,6 +194,16 @@ class CacheMixin(MIXIN_BASE):
             cached_response = self.cache.get_response(actions.cache_key)
         actions.update_from_cached_response(cached_response)
 
+        # Handle Vary: Validate that the current request was sent with the same relevant headers as
+        # the cached request. By this point we will have already followed an alias from the primary
+        # cache key to a secondary one.
+        if cached_response and cached_response.headers.get('Vary'):
+            secondary_cache_key = self.cache.create_key(
+                request, match_headers=cached_response.headers['Vary']
+            )
+            if secondary_cache_key != cached_response.cache_key:
+                cached_response = None
+
         # Handle missing and expired responses based on settings and headers
         if actions.error_504:
             response: AnyResponse = get_504_response(request)
@@ -229,6 +239,12 @@ class CacheMixin(MIXIN_BASE):
         request = actions.update_request(request)
         response = super().send(request, **kwargs)
         actions.update_from_response(response)
+
+        # TODO: Handle Vary
+        if response.headers.get('Vary'):
+            secondary_cache_key = self.cache.create_key(
+                request, match_headers=cached_response.headers['Vary']
+            )
 
         if not actions.skip_write:
             self.cache.save_response(response, actions.cache_key, actions.expires)
