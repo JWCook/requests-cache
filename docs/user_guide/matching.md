@@ -6,19 +6,18 @@ are normalized to account for any variations that do not modify response content
 There are some additional options to configure how you want requests to be matched.
 
 ## Matching Request Headers
-In some cases, different headers may result in different response data, so you may want to cache
-them separately. To enable this, use `match_headers`:
+In some cases, different request header values may result in different response data, so you may
+want to cache them separately. You can specify which headers you want to match with the
+`match_headers` option:
 ```python
->>> session = CachedSession(match_headers=True)
->>> # Both of these requests will be sent and cached separately
+>>> session = CachedSession(match_headers=['Accept'])
+>>> # Each of these requests will be sent and cached separately
 >>> session.get('https://httpbin.org/headers', {'Accept': 'text/plain'})
 >>> session.get('https://httpbin.org/headers', {'Accept': 'application/json'})
 ```
 
-If you only want to match specific headers and not others, you can provide them as a list:
-```python
->>> session = CachedSession(match_headers=['Accept', 'Accept-Language'])
-```
+If you want to match _all_ request headers, you can pass `match_headers=True`.
+
 
 (filter-params)=
 ## Selective Parameter Matching
@@ -83,28 +82,36 @@ def create_key(request: requests.PreparedRequest, **kwargs) -> str:
     """Generate a custom cache key for the given request"""
 ```
 
-`**kwargs` includes relevant {py:class}`.BaseCache` settings and any other keyword args passed to
-{py:meth}`.CachedSession.send()`. See {py:func}`.create_key` for the reference implementation, and
-see the rest of the {py:mod}`.cache_keys` module for some potentially useful helper functions.
-
 You can then pass this function via the `key_fn` param:
 ```python
 session = CachedSession(key_fn=create_key)
 ```
 
-```{note}
-`key_fn()` will be used **instead of** any other {ref}`matching` options and default matching behavior.
+`**kwargs` includes relevant {py:class}`.BaseCache` settings and any other keyword args passed to
+{py:meth}`.CachedSession.send()`. If you want use a custom matching function _and_ the existing
+options `ignored_parameters` and `match_headers`, you can implement them in `key_fn`:
+```python
+def create_key(
+    request: requests.PreparedRequest,
+    ignored_parameters: List[str] = None,
+    match_headers: List[str] = None,
+    **kwargs,
+) -> str:
+    """Generate a custom cache key for the given request"""
 ```
+
+See {py:func}`.create_key` for the reference implementation, and see the rest of the
+{py:mod}`.cache_keys` module for some potentially useful helper functions.
+
+
 ```{tip}
 See {ref}`Examples<custom_keys>` page for a complete example for custom request matching.
 ```
 ```{tip}
-As a general rule, if you include less info in your cache keys, you will have more cache hits and
-use less storage space, but risk getting incorrect response data back. For example, if you exclude
-all request parameters, you will get the same cached response back for any combination of request
-parameters.
+As a general rule, if you include less information in your cache keys, you will have more cache hits
+and use less storage space, but risk getting incorrect response data back.
 ```
 ```{warning}
 If you provide a custom key function for a non-empty cache, any responses previously cached with a
-different key function will likely be unused.
+different key function will be unused, so it's recommended to clear the cache first.
 ```
