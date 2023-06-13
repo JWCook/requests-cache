@@ -251,6 +251,7 @@ class CacheActions(RichMixin):
         )
         self.skip_write = self.expires == cached_response.expires and not headers_changed
 
+        cached_response.content_changed = False
         cached_response.expires = self.expires
         cached_response.headers.update(response.headers)
         cached_response.revalidated = True

@@ -239,7 +239,13 @@ class CacheMixin(MIXIN_BASE):
             return cached_response
         else:
             logger.debug(f'Skipping cache write for URL: {request.url}')
-        return OriginalResponse.wrap_response(response, actions)
+
+        # Add extra cache-related attributes to the response
+        response = OriginalResponse.wrap_response(response, actions)
+        response.content_changed = (
+            cached_response is None or response._content != cached_response._content
+        )
+        return response
 
     def _resend(
         self,

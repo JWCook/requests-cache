@@ -31,6 +31,7 @@ class BaseResponse(Response):
     created_at: datetime = field(factory=datetime.utcnow)
     expires: Optional[datetime] = field(default=None)
     cache_key: str = ''  # Not serialized; set by BaseCache.get_response()
+    content_changed: bool = True  # Not serialized; set by CacheActions
     revalidated: bool = False  # Not serialized; set by CacheActions.update_revalidated_response()
 
     @property
