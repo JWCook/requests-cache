@@ -13,6 +13,7 @@ from tests.integration.base_cache_test import BaseCacheTest
 from tests.integration.base_storage_test import BaseStorageTest
 
 try:
+    from pymongo import MongoClient
     from pymongo.errors import ServerSelectionTimeoutError
 except ImportError:
     pass
@@ -47,6 +48,12 @@ class TestMongoDict(BaseStorageTest):
         )
         assert "host=['0.0.0.0:2222']" in repr(cache.connection)
         assert "tz_aware=True" in repr(cache.connection)
+
+    def test_connection_obj(self):
+        connection = MongoClient(host='mongodb://0.0.0.0', port=27017)
+        assert bool(connection)
+        cache = MongoDict('test', connection=connection)
+        assert cache.connection is connection
 
 
 class TestMongoCache(BaseCacheTest):

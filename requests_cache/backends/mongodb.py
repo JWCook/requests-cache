@@ -89,7 +89,8 @@ class MongoDict(BaseStorage):
     ):
         super().__init__(serializer=serializer, **kwargs)
         connection_kwargs = get_valid_kwargs(MongoClient.__init__, kwargs)
-        self.connection = connection or MongoClient(**connection_kwargs)
+        self.connection = connection if connection is not None else MongoClient(**connection_kwargs)
+        # self.connection = connection or MongoClient(**connection_kwargs)
         self.collection = self.connection[db_name][collection_name]
 
     def get_ttl(self) -> Optional[int]:
